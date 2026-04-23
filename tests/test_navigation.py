@@ -1,29 +1,20 @@
-import time
 from pages.home_page import HomePage
+from constants import MAIN_PAGE_URL, DZEN_URL, YANDEX_URL, ORDER_ENDPOINT
 
 
 class TestNavigation:
     def test_scooter_logo_redirects_to_main(self, driver):
         home_page = HomePage(driver)
-        # Переходим на страницу заказа, чтобы потом вернуться
         home_page.click_order_top()
-        time.sleep(1)
-        # Кликаем на логотип Самоката
+        home_page.wait_for_url_contains(ORDER_ENDPOINT)
         home_page.click_scooter_logo()
-        time.sleep(1)
-        # Проверяем, что вернулись на главную
-        assert driver.current_url == "https://qa-scooter.praktikum-services.ru/"
+        home_page.wait_for_url_to_be(MAIN_PAGE_URL)
+        assert home_page.get_current_url() == MAIN_PAGE_URL
 
     def test_yandex_logo_opens_dzen_in_new_tab(self, driver):
         home_page = HomePage(driver)
-        original_window = driver.current_window_handle
-        # Кликаем на логотип Яндекса
+        original_window = home_page.get_current_window_handle()
         home_page.click_yandex_logo()
-        time.sleep(2)
-        # Переключаемся на новую вкладку
-        for window_handle in driver.window_handles:
-            if window_handle != original_window:
-                driver.switch_to.window(window_handle)
-                break
-        # Проверяем, что открылся Дзен
-        assert "dzen.ru" in driver.current_url or "yandex.ru" in driver.current_url
+        home_page.switch_to_new_window(original_window)
+        home_page.wait_for_url_contains(DZEN_URL)
+        assert DZEN_URL in home_page.get_current_url() or YANDEX_URL in home_page.get_current_url()

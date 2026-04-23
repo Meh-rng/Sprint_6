@@ -1,105 +1,69 @@
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
+from pages.base_page import BasePage
+from locators.order_page_locators import OrderPageLocators
+from selenium.webdriver.common.by import By
 
 
-class OrderPage:
-    
-    # Первая форма — по индексу полей
-    NAME_FIELD = (By.XPATH, "//input[@placeholder='* Имя']")
-    SURNAME_FIELD = (By.XPATH, "//input[@placeholder='* Фамилия']")
-    ADDRESS_FIELD = (By.XPATH, "//input[@placeholder='* Адрес: куда привезти заказ']")
-    METRO_FIELD = (By.XPATH, "//input[@placeholder='* Станция метро']")
-    PHONE_FIELD = (By.XPATH, "//input[@placeholder= '* Телефон: на него позвонит курьер']")
-    NEXT_BUTTON = (By.XPATH, "//button[text()='Далее']")
-    
-    
-    # Вторая форма
-    DATE_FIELD = (By.XPATH, "//input[@placeholder='* Когда привезти самокат']")
-    RENTAL_DROPDOWN = (By.CLASS_NAME, "Dropdown-control")
-    COLOR_BLACK = (By.ID, "black")
-    COLOR_GREY = (By.ID, "grey")
-    COMMENT_FIELD = (By.XPATH, "//input[@placeholder='Комментарий для курьера']")
-    ORDER_BUTTON = (By.XPATH, "//div[contains(@class, 'Order_Buttons')]/button[text()='Заказать']")
-    CONFIRM_BUTTON = (By.XPATH, "//button[text()='Да']")
-    SUCCESS_MESSAGE = (By.XPATH, "//div[contains(@class, 'Order_ModalHeader')]")
-
+class OrderPage(BasePage):
     def __init__(self, driver):
-        self.driver = driver
+        super().__init__(driver)
+        self.locators = OrderPageLocators
 
     def fill_name(self, name):
-        self.driver.find_element(*self.NAME_FIELD).send_keys(name)
+        self.send_keys(self.locators.NAME_FIELD, name)
 
     def fill_surname(self, surname):
-        self.driver.find_element(*self.SURNAME_FIELD).send_keys(surname)
+        self.send_keys(self.locators.SURNAME_FIELD, surname)
 
     def fill_address(self, address):
-        self.driver.find_element(*self.ADDRESS_FIELD).send_keys(address)
+        self.send_keys(self.locators.ADDRESS_FIELD, address)
 
     def fill_metro(self, metro):
-        field = WebDriverWait(self.driver, 10).until(
-            EC.element_to_be_clickable(self.METRO_FIELD)
-    )
+        field = self.find_element(self.locators.METRO_FIELD)
         field.click()
         field.send_keys(metro)
-        
-        station = WebDriverWait(self.driver, 10).until(
-            EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'select-search__select')]//li"))
-    )
+        station = self.find_element(self.locators.METRO_STATION)
         station.click()
-        
 
     def fill_phone(self, phone):
-        
-        field = WebDriverWait(self.driver, 10).until(
-        EC.presence_of_element_located(self.PHONE_FIELD)
-    )
-        field.clear()
-        field.send_keys(phone)
+        self.send_keys(self.locators.PHONE_FIELD, phone)
 
     def click_next(self):
-        self.driver.find_element(*self.NEXT_BUTTON).click()
+        self.click_element(self.locators.NEXT_BUTTON)
 
     def fill_date(self, date):
-        field = self.driver.find_element(*self.DATE_FIELD)
+        field = self.find_element(self.locators.DATE_FIELD)
         field.send_keys(date)
         field.send_keys(Keys.RETURN)
 
     def select_rental_period(self, period):
-        self.driver.find_element(*self.RENTAL_DROPDOWN).click()
+        # Прямое обращение к driver необходимо из-за бага GeckoDriver:
+        # метод click_element не открывает выпадающий список в Firefox
+        self.driver.find_element(*self.locators.RENTAL_DROPDOWN).click()
         period_option = (By.XPATH, f"//div[contains(@class, 'Dropdown-option') and text()='{period}']")
-        WebDriverWait(self.driver, 3).until(
-            EC.element_to_be_clickable(period_option)
-        ).click()
+        self.wait_and_click(period_option, timeout=3)
 
     def select_color(self, color):
-        if color.lower() == "black":
-            self.driver.find_element(*self.COLOR_BLACK).click()
-        elif color.lower() == "grey":
-            self.driver.find_element(*self.COLOR_GREY).click()
+       colors = {
+            "black": self.locators.COLOR_BLACK,
+            "grey": self.locators.COLOR_GREY
+       }
+       self.click_element(colors[color.lower()])
 
     def fill_comment(self, comment):
-        self.driver.find_element(*self.COMMENT_FIELD).send_keys(comment)
+        self.send_keys(self.locators.COMMENT_FIELD, comment)
 
     def click_order(self):
-        element = WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable(self.ORDER_BUTTON))
-        self.driver.execute_script("arguments[0].click();", element)
+        self.click_element(self.locators.ORDER_BUTTON)
 
     def confirm_order(self):
-        element = WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable(self.CONFIRM_BUTTON))
-        self.driver.execute_script("arguments[0].click();", element)
+        self.click_element(self.locators.CONFIRM_BUTTON)
 
-    def get_success_message(self):
-        return WebDriverWait(self.driver, 5).until(
-            EC.visibility_of_element_located(self.SUCCESS_MESSAGE)
-        ).text
+    def is_success_message_displayed(self):
+        return self.find_element(self.locators.SUCCESS_MESSAGE).is_displayed()
 
-    # Комбинированные методы
     def fill_first_form(self, name, surname, address, metro, phone):
-        WebDriverWait(self.driver, 10).until(
-        EC.visibility_of_element_located(self.NAME_FIELD)
-    )
+        self.wait_for_text_not_empty(self.locators.NAME_FIELD, 0)
         self.fill_name(name)
         self.fill_surname(surname)
         self.fill_address(address)
@@ -111,4 +75,6 @@ class OrderPage:
         self.select_rental_period(rental_period)
         self.select_color(color)
         self.fill_comment(comment)
-        
+    
+    def wait_for_date_field(self):
+        self.wait_for_element_visible(self.locators.DATE_FIELD)
