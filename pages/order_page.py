@@ -1,8 +1,7 @@
 from selenium.webdriver.common.keys import Keys
 from pages.base_page import BasePage
 from locators.order_page_locators import OrderPageLocators
-from selenium.webdriver.common.by import By
-
+from helpers.locators_helper import get_rental_period_option
 
 class OrderPage(BasePage):
     def __init__(self, driver):
@@ -36,11 +35,9 @@ class OrderPage(BasePage):
         field.send_keys(date)
         field.send_keys(Keys.RETURN)
 
-    def select_rental_period(self, period):
-        # Прямое обращение к driver необходимо из-за бага GeckoDriver:
-        # метод click_element не открывает выпадающий список в Firefox
-        self.driver.find_element(*self.locators.RENTAL_DROPDOWN).click()
-        period_option = (By.XPATH, f"//div[contains(@class, 'Dropdown-option') and text()='{period}']")
+    def select_rental_period(self, rental_period):
+        self.click_element(self.locators.RENTAL_DROPDOWN)
+        period_option = get_rental_period_option(rental_period)
         self.wait_and_click(period_option, timeout=3)
 
     def select_color(self, color):

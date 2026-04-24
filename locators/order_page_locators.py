@@ -21,4 +21,3 @@ class OrderPageLocators:
     
     # Выбор станции метро из выпадающего списка
     METRO_STATION = (By.XPATH, "//div[contains(@class, 'select-search__select')]//li")
-    
